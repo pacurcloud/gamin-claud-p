@@ -1,26 +1,12 @@
 services:
   gamin-claud-p:
-    image: dockurr/windows:latest
+    build: .
     container_name: gamin-claud-p
-    environment:
-      VERSION: "tiny11"
-      RAM_SIZE: "11G"
-      CPU_CORES: "2"
-      DISK_SIZE: "8G"
-      USERNAME: "gamer"
-      PASSWORD: "123"
-      KVM: "N"
-    devices:
-      - /dev/net/tun
-    cap_add:
-      - NET_ADMIN
+    shm_size: "2gb"
     ports:
-      - "8006:8006"
-      - "3389:3389/tcp"
-      - "3389:3389/udp"
+      - "8080:8080"     # Pantalla web instantánea (noVNC)
+      - "47990:47990"   # Panel web Sunshine (para streaming en PC/servidor con GPU)
     volumes:
-      - ./windows-data:/storage
-      - ./intros:/shared/intros
-      - ./oem:/oem
+      - ./intros:/intros
+      - ./scripts:/opt/gamin-claud-p
     restart: unless-stopped
-    stop_grace_period: 2m

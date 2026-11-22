@@ -6,7 +6,7 @@ services:
       VERSION: "tiny11"
       RAM_SIZE: "11G"
       CPU_CORES: "2"
-      DISK_SIZE: "10G"
+      DISK_SIZE: "8G"
       USERNAME: "gamer"
       PASSWORD: "123"
       KVM: "N"
@@ -22,4 +22,5 @@ services:
       - ./windows-data:/storage
       - ./intros:/shared/intros
       - ./oem:/oem
-    restart: "no"
+    restart: unless-stopped
+    stop_grace_period: 2m

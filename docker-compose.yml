@@ -6,6 +6,10 @@ services:
     network_mode: host
     privileged: true
     shm_size: "4gb"
+    tmpfs:
+      - /root/.local/share/Steam:rw,size=4g
+      - /root/.config/heroic:rw,size=2g
+      - /root/.config/chromium:rw,size=2g
     environment:
       - PUID=1000
       - PGID=1000
@@ -23,11 +27,3 @@ services:
     devices:
       - /dev/dri:/dev/dri
       - /dev/uinput:/dev/uinput
-    # Descomenta las siguientes líneas si usas GPU NVIDIA con nvidia-container-toolkit:
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu, video, compute, utility]

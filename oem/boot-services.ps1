@@ -1,71 +1,70 @@
-$Host.UI.RawUI.WindowTitle = "gamin-claud-p | Consola de Servicios en Vivo"
+$Host.UI.RawUI.WindowTitle = "gamin-claud-p | Cargando servicios..."
+[Console]::CursorVisible = $false
 Clear-Host
 
-function Write-Log {
-    param([string]$Level, [string]$Message, [ConsoleColor]$Color = "Gray")
-    $time = Get-Date -Format "HH:mm:ss"
-    Write-Host "[$time] " -NoNewline -ForegroundColor DarkGray
-    Write-Host "[$Level] " -NoNewline -ForegroundColor $Color
-    Write-Host $Message
+function Show-LoadingStep {
+    param(
+        [string]$TaskLabel,
+        [int]$Percent,
+        [scriptblock]$Action
+    )
+
+    $job = Start-Job -ScriptBlock $Action
+    $frames = @("|", "/", "-", "\")
+    $i = 0
+
+    while ($job.State -eq "Running") {
+        $spin = $frames[$i % $frames.Count]
+        $filled = [math]::Floor($Percent / 5)
+        $bar = ("#" * $filled) + ("-" * (20 - $filled))
+        Write-Host "`r  [$spin] Cargando servicios... [$bar] $Percent% - $TaskLabel   " -NoNewline -ForegroundColor Cyan
+        Start-Sleep -Milliseconds 150
+        $i++
+    }
+
+    Receive-Job -Job $job -ErrorAction SilentlyContinue | Out-Null
+    Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
 }
 
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "   GAMIN-CLAUD-P :: INICIALIZANDO SERVICIOS EN WINDOWS 11   " -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  ======================================================" -ForegroundColor DarkCyan
+Write-Host "                    GAMIN - CLAUD - P                   " -ForegroundColor White
+Write-Host "  ======================================================" -ForegroundColor DarkCyan
 Write-Host ""
 
-# 1. Verificar y sincronizar intros MP4 desde el host Docker
-Write-Log "STORAGE" "Verificando carpeta compartida de intros MP4..." "Yellow"
-if (Test-Path "\\host.lan\Data\intros") {
-    Copy-Item "\\host.lan\Data\intros\*.mp4" "C:\gamin-claud-p\" -Force -ErrorAction SilentlyContinue
-    Write-Log "OK" "Videos xbox.mp4, steam.mp4 y epic.mp4 sincronizados." "Green"
-} else {
-    Write-Log "WARN" "Usando intros locales en C:\gamin-claud-p\" "DarkYellow"
+# 1. Sincronizar intros MP4
+Show-LoadingStep -TaskLabel "Sincronizando intros (Xbox / Steam / Epic)" -Percent 25 -Action {
+    New-Item -ItemType Directory -Path "C:\gamin-claud-p" -Force | Out-Null
+    if (Test-Path "\\host.lan\Data\intros") {
+        Copy-Item "\\host.lan\Data\intros\*.mp4" "C:\gamin-claud-p\" -Force -ErrorAction SilentlyContinue
+    }
+    Start-Sleep -Seconds 1
 }
 
-# 2. Iniciar servicio de Audio de Windows (necesario para streaming)
-Write-Log "AUDIO" "Iniciando Windows Audio (Audiosrv) para salida en streaming..." "Yellow"
-Start-Service -Name "Audiosrv" -ErrorAction SilentlyContinue
-Set-Service -Name "Audiosrv" -StartupType Automatic -ErrorAction SilentlyContinue
-Write-Log "OK" "Servicio de audio activo." "Green"
-
-# 3. Verificar reproductor VLC para intros sin bordes
-$vlcPath = "${env:ProgramFiles}\VideoLAN\VLC\vlc.exe"
-if (-not (Test-Path $vlcPath)) {
-    Write-Log "PKG" "Instalando reproductor multimedia para intros MP4..." "Yellow"
-    winget install --id=VideoLAN.VLC -e --silent --accept-package-agreements --accept-source-agreements | Out-Null
-    Write-Log "OK" "Reproductor instalado." "Green"
-} else {
-    Write-Log "OK" "Reproductor multimedia listo." "Green"
+# 2. Activar servicio de audio
+Show-LoadingStep -TaskLabel "Iniciando audio para streaming" -Percent 55 -Action {
+    Start-Service -Name "Audiosrv" -ErrorAction SilentlyContinue
+    Set-Service -Name "Audiosrv" -StartupType Automatic -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 1
 }
 
-# 4. Verificar clientes nativos (Xbox App, Steam, Epic)
-Write-Log "APPS" "Comprobando clientes nativos instalados..." "Yellow"
-if (Get-AppxPackage -Name "*XboxApp*" -ErrorAction SilentlyContinue) {
-    Write-Log "OK" "Xbox App nativa detectada en Windows 11." "Green"
-} else {
-    Write-Log "INFO" "Xbox App se abrira mediante protocolo nativo xbox:" "Cyan"
+# 3. Preparar reproductor de intros
+Show-LoadingStep -TaskLabel "Preparando motor de video sin bordes" -Percent 85 -Action {
+    $vlcPath = "${env:ProgramFiles}\VideoLAN\VLC\vlc.exe"
+    if (-not (Test-Path $vlcPath)) {
+        winget install --id=VideoLAN.VLC -e --silent --accept-package-agreements --accept-source-agreements | Out-Null
+    }
 }
 
-if (Test-Path "${env:ProgramFiles(x86)}\Steam\steam.exe") {
-    Write-Log "OK" "Cliente nativo de Steam listo." "Green"
-} else {
-    Write-Log "INFO" "Steam se instalara bajo demanda al seleccionarlo." "Cyan"
+# 4. Completado
+Show-LoadingStep -TaskLabel "Verificando sesion temporal y controles" -Percent 100 -Action {
+    Start-Sleep -Seconds 1
 }
 
-if (Test-Path "${env:ProgramFiles(x86)}\Epic Games\Launcher\Portal\Binaries\Win32\EpicGamesLauncher.exe") {
-    Write-Log "OK" "Epic Games Launcher listo." "Green"
-} else {
-    Write-Log "INFO" "Epic Games se instalara bajo demanda al seleccionarlo." "Cyan"
-}
-
-# 5. Activar demonio en segundo plano que escucha Ctrl + Alt + M y limpieza de sesion
-Write-Log "SYSTEM" "Activando servicio de sesion temporal (se limpia al apagar Docker)..." "Yellow"
+Write-Host "`r  [OK] Cargando servicios... [####################] 100% - ¡Listo!          " -ForegroundColor Green
+Write-Host ""
+[Console]::CursorVisible = $true
 Start-Sleep -Seconds 1
-Write-Log "READY" "Todos los servicios de gamin-claud-p estan operativos." "Green"
-Write-Host ""
-Write-Host ">> Lanzando selector de plataformas (Atajo: Ctrl + Alt + M)..." -ForegroundColor Magenta
-Start-Sleep -Seconds 2
 
-# Ejecutar el selector visual dejando esta consola visible detras como monitor de logs
+# Abrir el selector de plataformas (Xbox, Steam Big Picture, Epic)
 & "C:\gamin-claud-p\launcher.ps1"

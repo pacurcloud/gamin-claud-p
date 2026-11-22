@@ -3,10 +3,10 @@ services:
     image: dockurr/windows:latest
     container_name: gamin-claud-p
     environment:
-      VERSION: "11"
-      RAM_SIZE: "4G"
+      VERSION: "tiny11"
+      RAM_SIZE: "11G"
       CPU_CORES: "2"
-      DISK_SIZE: "12G"
+      DISK_SIZE: "10G"
       USERNAME: "gamer"
       PASSWORD: "123"
       KVM: "N"
@@ -15,12 +15,11 @@ services:
     cap_add:
       - NET_ADMIN
     ports:
-      - "8006:8006"     # Pantalla web de Windows 11
-      - "3389:3389/tcp" # Escritorio Remoto (RDP) con audio y mando
+      - "8006:8006"
+      - "3389:3389/tcp"
       - "3389:3389/udp"
     volumes:
       - ./windows-data:/storage
       - ./intros:/shared/intros
       - ./oem:/oem
-    restart: unless-stopped
-    stop_grace_period: 2m
+    restart: "no"

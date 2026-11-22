@@ -1,29 +1,29 @@
 services:
   gamin-claud-p:
-    build: .
+    image: dockurr/windows:latest
     container_name: gamin-claud-p
-    restart: unless-stopped
-    network_mode: host
-    privileged: true
-    shm_size: "4gb"
-    tmpfs:
-      - /root/.local/share/Steam:rw,size=4g
-      - /root/.config/heroic:rw,size=2g
-      - /root/.config/chromium:rw,size=2g
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/Mexico_City
-      - DISPLAY=:1
-      - SUNSHINE_USER=${SUNSHINE_USER:-admin}
-      - SUNSHINE_PASS=${SUNSHINE_PASS:-admin1234}
-    volumes:
-      - ./config:/config
-      - ./games:/games
-      - ./scripts:/opt/gamin-claud-p
-      - /dev/dri:/dev/dri
-      - /dev/uinput:/dev/uinput
-      - /dev/input:/dev/input
+      VERSION: "11"
+      RAM_SIZE: "4G"
+      CPU_CORES: "2"
+      DISK_SIZE: "40G"
+      USERNAME: "gamer"
+      PASSWORD: "123"
+      # Si pruebas en un entorno sin KVM (como Codespaces), descomenta la siguiente línea:
+      # KVM: "N"
     devices:
-      - /dev/dri:/dev/dri
-      - /dev/uinput:/dev/uinput
+      - /dev/kvm
+      - /dev/net/tun
+      - /dev/dri
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "8006:8006"     # Acceso web directo al escritorio Windows 11
+      - "3389:3389/tcp" # RDP (para conectar con mando/audio desde cualquier PC/móvil)
+      - "3389:3389/udp"
+    volumes:
+      - ./windows-data:/storage
+      - ./intros:/shared/intros
+      - ./oem:/oem
+    restart: unless-stopped
+    stop_grace_period: 2m

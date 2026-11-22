@@ -1,0 +1,33 @@
+services:
+  gamin-claud-p:
+    build: .
+    container_name: gamin-claud-p
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    shm_size: "4gb"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Mexico_City
+      - DISPLAY=:1
+      - SUNSHINE_USER=${SUNSHINE_USER:-admin}
+      - SUNSHINE_PASS=${SUNSHINE_PASS:-admin1234}
+    volumes:
+      - ./config:/config
+      - ./games:/games
+      - ./scripts:/opt/gamin-claud-p
+      - /dev/dri:/dev/dri
+      - /dev/uinput:/dev/uinput
+      - /dev/input:/dev/input
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/uinput:/dev/uinput
+    # Descomenta las siguientes líneas si usas GPU NVIDIA con nvidia-container-toolkit:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu, video, compute, utility]

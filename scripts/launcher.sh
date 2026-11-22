@@ -3,35 +3,45 @@ set -e
 
 export DISPLAY=:1
 
-# 1. Iniciar D-Bus y PulseAudio con salida virtual para Sunshine/Moonlight
-mkdir -p /var/run/dbus
-dbus-daemon --system --fork || true
-
-pulseaudio --start --exit-idle-time=-1 || true
+# 1. Iniciar servidor gráfico virtual HD y audio
+Xvfb :1 -screen 0 1280x720x24 &
 sleep 1
-pactl load-module module-null-sink sink_name=gamin_sink sink_properties=device.description="gamin-claud-p-audio" || true
-pactl set-default-sink gamin_sink || true
-
-# 2. Iniciar servidor gráfico virtual (Xorg) y gestor de ventanas (Openbox)
-Xorg :1 -nolisten tcp vt7 &
-sleep 2
 openbox-session &
-sleep 1
+pulseaudio --start --exit-idle-time=-1 || true
 
-# 3. Registrar atajo de teclado Ctrl + Alt + M para cambiar de plataforma
+# 2. Exponer pantalla en el puerto 8080 vía noVNC
+x11vnc -display :1 -nopw -listen 0.0.0.0 -xkb -forever -shared &
+websockify --web=/usr/share/novnc/ 8080 localhost:5900 &
+
+# 3. Registrar atajo Ctrl + Alt + M para cambiar de plataforma
 cat << 'EOF' > /root/.xbindkeysrc
 "/opt/gamin-claud-p/switch-platform.sh"
   Control+Alt + m
 EOF
 xbindkeys -f /root/.xbindkeysrc &
 
-# 4. Configurar credenciales de Sunshine y arrancarlo en segundo plano
-sunshine --creds "${SUNSHINE_USER:-admin}" "${SUNSHINE_PASS:-admin1234}" || true
-sunshine &
-sleep 1
+# 4. Abrir terminal visible en pantalla con animación "Cargando servicios..."
+xterm -fa "Monospace" -fs 12 -bg black -fg cyan -T "gamin-claud-p | Cargando servicios..." -e bash -c '
+  clear
+  echo "===================================================="
+  echo "               GAMIN - CLAUD - P                    "
+  echo "===================================================="
+  echo ""
+  spin="|/-\\"
+  pasos=("Iniciando entorno grafico y audio" "Verificando intros xbox.mp4 / steam.mp4 / epic.mp4" "Configurando sesion temporal" "Preparando clientes Steam, Epic y Xbox")
+  pct=0
+  for paso in "${pasos[@]}"; do
+    pct=$((pct + 25))
+    for i in $(seq 1 12); do
+      c=${spin:$((i % 4)):1}
+      printf "\r  [%c] Cargando servicios... (%d%%) - %s   " "$c" "$pct" "$paso"
+      sleep 0.1
+    done
+  done
+  printf "\r  [OK] Cargando servicios... (100%%) - ¡Listo!                    \n\n"
+  sleep 1
+  /opt/gamin-claud-p/switch-platform.sh
+  exec bash
+' &
 
-# 5. Abrir el menú selector de plataformas al iniciar
-/opt/gamin-claud-p/switch-platform.sh
-
-# Mantener contenedor activo
 tail -f /dev/null

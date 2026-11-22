@@ -1,0 +1,34 @@
+============================================================
+  GAMIN-CLAUD-P - GUIA RAPIDA DE INICIO (WINDOWS 11 DOCKER)
+============================================================
+
+1. PREPARAR ARCHIVOS DE INTRO (Opcional antes de arrancar)
+   Coloca tus videos MP4 dentro de la carpeta intros/:
+   - intros/xbox.mp4
+   - intros/steam.mp4
+   - intros/epic.mp4
+
+2. INICIAR O REHACER EL CONTENEDOR DOCKER
+   Abre la terminal en la carpeta del proyecto y ejecuta:
+   docker compose up -d
+
+   (Si necesitas borrar todo y rehacer Windows 11 desde cero):
+   docker compose down -v && rm -rf ./windows-data && docker compose up -d --force-recreate
+
+3. VER EL PROGRESO Y ENTRAR A WINDOWS 11
+   - En la pestaña "Ports" (Puertos), abre el puerto 8006 en el navegador.
+   - NO abras el puerto 3389 en el navegador (el 3389 es solo para cliente RDP).
+   - Credenciales de Windows 11:
+     Usuario: gamer
+     Clave:   123
+
+4. FUNCIONAMIENTO DENTRO DE WINDOWS 11
+   - Al entrar al escritorio se abrira una terminal visible con los logs
+     en tiempo real de los servicios de gamin-claud-p.
+   - Luego aparecera el selector de plataformas:
+     * Xbox: reproduce xbox.mp4 y abre la app nativa de Xbox.
+     * Steam: reproduce steam.mp4 y abre Steam en modo Big Picture.
+     * Epic Games: reproduce epic.mp4 y abre Epic Games en modo normal.
+   - Atajo para cambiar de plataforma en cualquier momento: Ctrl + Alt + M
+   - Nota: Al detener/eliminar el contenedor Docker, las sesiones se limpian.
+============================================================
